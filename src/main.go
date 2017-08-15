@@ -3,10 +3,11 @@ package main
 import (
 	"github.com/gorilla/mux"
 	"net/http"
-	"fmt"
 	"log"
 	"apiHandler"
 	"gopkg.in/mgo.v2"
+	"encoding/json"
+	"fmt"
 )
 
 const (
@@ -14,8 +15,10 @@ const (
 )
 
 func NotFoundHandler(w http.ResponseWriter, r *http.Request){
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusNotFound)
-	w.Write([]byte(fmt.Sprintf("%s %s not found\n", r.Method, r.URL)))
+	answer,_ := json.Marshal(fmt.Sprintf("%s %s not found", r.Method, r.URL))
+	w.Write(answer)
 }
 
 func main(){

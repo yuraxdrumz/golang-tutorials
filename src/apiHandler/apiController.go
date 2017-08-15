@@ -8,12 +8,10 @@ import (
 	"fmt"
 	"encoding/json"
 	"github.com/gorilla/mux"
+	"io/ioutil"
 )
 
-type Book struct {
-	Book1    string   `json:"bookName"`
-	Id      bson.ObjectId `json:"id" bson:"_id,omitempty"`
-}
+
 
 
 func ErrorWithJSON(w http.ResponseWriter, message string, code int) {
@@ -54,15 +52,26 @@ func GetBooks(s *mgo.Session) func(w http.ResponseWriter, r *http.Request){
 
 func InsertBook(s *mgo.Session) func(w http.ResponseWriter, r *http.Request){
 	return func(w http.ResponseWriter, r *http.Request){
-		vars := mux.Vars(r)
 		session := s.Copy()
 		defer session.Close()
 
 		c := session.DB("store").C("books")
 
-		book := Book{Book1:vars["bookName"]}
-		err := c.Insert(book)
+		var book Book
+		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
+			ErrorWithJSON(w, "Read Body error", http.StatusInternalServerError)
+			log.Println("Failed get all books: ", err)
+			return
+		}
+		jsonErr := json.Unmarshal(body, &book)
+		if jsonErr != nil {
+			ErrorWithJSON(w, "Json parse error", http.StatusInternalServerError)
+			log.Println("Failed get all books: ", err)
+			return
+		}
+		dbErr := c.Insert(book)
+		if dbErr != nil {
 			ErrorWithJSON(w, "Database error", http.StatusInternalServerError)
 			log.Println("Failed get all books: ", err)
 			return
