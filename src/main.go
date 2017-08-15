@@ -14,10 +14,12 @@ const (
 	MONGOADDR = "localhost"
 )
 
+
 func NotFoundHandler(w http.ResponseWriter, r *http.Request){
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusNotFound)
-	answer,_ := json.Marshal(fmt.Sprintf("%s %s not found", r.Method, r.URL))
+	err := apiHandler.ErrorMessage{Err:fmt.Sprintf("%s %s not found", r.Method, r.URL)}
+	answer,_ := json.Marshal(err)
 	w.Write(answer)
 }
 

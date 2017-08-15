@@ -6,3 +6,7 @@ type Book struct {
 	Book1    string   `json:"bookName"`
 	Id      bson.ObjectId `json:"id" bson:"_id,omitempty"`
 }
+
+type ErrorMessage struct {
+	Err string `json:"error"`
+}

@@ -5,7 +5,6 @@ import (
 	"log"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	"fmt"
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"io/ioutil"
@@ -15,15 +14,20 @@ import (
 
 
 func ErrorWithJSON(w http.ResponseWriter, message string, code int) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
-	fmt.Fprintf(w, "{message: %q}", message)
+	errMessage := ErrorMessage{message}
+	answer,jsonErr := json.Marshal(errMessage)
+	if jsonErr != nil{
+		log.Fatal(jsonErr)
+	}
+	w.Write(answer)
 }
 
-func ResponseWithJSON(w http.ResponseWriter, json []byte, code int) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+func ResponseWithJSON(w http.ResponseWriter, message []byte, code int) {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
-	w.Write(json)
+	w.Write(message)
 }
 
 func GetBooks(s *mgo.Session) func(w http.ResponseWriter, r *http.Request){
@@ -80,7 +84,6 @@ func InsertBook(s *mgo.Session) func(w http.ResponseWriter, r *http.Request){
 		if err != nil {
 			log.Fatal(err)
 		}
-
 		ResponseWithJSON(w, respBody, http.StatusOK)
 	}
 
