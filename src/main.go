@@ -8,6 +8,7 @@ import (
 	"gopkg.in/mgo.v2"
 	"encoding/json"
 	"fmt"
+	"github.com/urfave/negroni"
 )
 
 const (
@@ -33,5 +34,7 @@ func main(){
 	router.NotFoundHandler = http.HandlerFunc(NotFoundHandler)
 	apiHandler.RegisterRouter("/api", router, s)
 	log.Printf("Listening on port 3000")
-	log.Fatal(http.ListenAndServe(":3000", router))
+	n := negroni.Classic() // Includes some default middlewares
+	n.UseHandler(router)
+	log.Fatal(http.ListenAndServe(":3000", n))
 }
