@@ -55,6 +55,16 @@ type User struct {
 	Browser Browser
 }
 
+type AntiBot struct {
+	isOk bool
+	isBot bool
+}
+
+
 type ErrorMessage struct {
 	Err string `json:"error"`
+}
+
+func (e *ErrorMessage) Error() string {
+	return e.Err
 }

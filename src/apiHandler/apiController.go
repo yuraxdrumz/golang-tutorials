@@ -7,10 +7,15 @@ import (
 	"encoding/json"
 	"github.com/mssola/user_agent"
 	"gopkg.in/mgo.v2/bson"
+	"errors"
 )
 
 
-
+const (
+	DBNAME = "newonetapadmin"
+	COLLECTIONNAME = "tags"
+	TAGID = "tagId"
+)
 
 func ErrorWithJSON(w http.ResponseWriter, message string, code int) {
 	w.Header().Set("Content-Type", "application/json")
@@ -31,7 +36,7 @@ func ResponseWithJSON(w http.ResponseWriter, message []byte, code int) {
 
 
 func GetHtmlCode(s *mgo.Session) func(w http.ResponseWriter, r *http.Request){
-	return func(w http.ResponseWriter, r *http.Request){
+	return func(w http.ResponseWriter, r *http.Request) {
 
 		queries := r.URL.Query()
 		parsedUserAgent := parseUserAgent(r.UserAgent())
@@ -39,18 +44,20 @@ func GetHtmlCode(s *mgo.Session) func(w http.ResponseWriter, r *http.Request){
 		session := s.Copy()
 		defer session.Close()
 
-		tag, err := getTag(session, queries.Get("tagId"))
+		tag, err := getTag(session, queries.Get(TAGID))
 		if err != nil{
 			ErrorWithJSON(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
-		matchedGroup := tag.getMatchedGroup(parsedUserAgent)
-		respBody, err := json.MarshalIndent(matchedGroup.HtmlCode, "", " ")
+		matchedGroup := tag.getMatchedGroup(&parsedUserAgent)
+		respBody, err := json.MarshalIndent(matchedGroup, "", " ")
 		if err != nil {
-			log.Fatal(err)
+			ErrorWithJSON(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
-		ResponseWithJSON(w, respBody, 200)
-		//dataStore := session.DB("store").C("tags")
+		ResponseWithJSON(w, respBody, http.StatusOK)
+		return
 	}
 }
 
@@ -76,100 +83,34 @@ func parseUserAgent(userAgent string) User {
 }
 
 func getTag(s *mgo.Session,id string) (tag *Tag, err error){
-	dataStore := s.DB("newonetapadmin").C("tags")
-	err = dataStore.Find(bson.M{"_id":bson.ObjectIdHex(id)}).One(&tag)
-	return
-}
-
-func (tag *Tag) getMatchedGroup(user User) (group Group){
-	switch len(tag.Groups) {
-	case 1:
-		group = tag.Groups[0]
-	default:
-		group = tag.Groups[0]
+	isId := bson.IsObjectIdHex(id)
+	if isId {
+		dataStore := s.DB(DBNAME).C(COLLECTIONNAME)
+		err = dataStore.Find(bson.M{"_id":bson.ObjectIdHex(id)}).One(&tag)
+	}else{
+		err = errors.New("Id is not valid")
 	}
 	return
 }
 
+func (tag *Tag) getMatchedGroup(user *User) (group *Group){
+	switch len(tag.Groups) {
+	default:
+		group = &tag.Groups[0]
+	}
+	return
+}
 
-//func GetBooks(s *mgo.Session) func(w http.ResponseWriter, r *http.Request){
-//	return func(w http.ResponseWriter, r *http.Request){
-//		session := s.Copy()
-//		defer session.Close()
-//
-//		c := session.DB("store").C("books")
-//
-//		var books []Book
-//		err := c.Find(bson.M{}).All(&books)
-//		if err != nil {
-//			ErrorWithJSON(w, "Database error", http.StatusInternalServerError)
-//			log.Println("Failed get all books: ", err)
-//			return
-//		}
-//		respBody, err := json.MarshalIndent(books, "", " ")
-//		if err != nil {
-//			log.Fatal(err)
-//		}
-//
-//		ResponseWithJSON(w, respBody, http.StatusOK)
-//	}
-//
-//}
-//func InsertBook(s *mgo.Session) func(w http.ResponseWriter, r *http.Request){
-//	return func(w http.ResponseWriter, r *http.Request){
-//		session := s.Copy()
-//		defer session.Close()
-//
-//		c := session.DB("store").C("books")
-//
-//		var book Book
-//		body, err := ioutil.ReadAll(r.Body)
-//		if err != nil {
-//			ErrorWithJSON(w, "Read Body error", http.StatusInternalServerError)
-//			log.Println("Failed get all books: ", err)
-//			return
-//		}
-//		jsonErr := json.Unmarshal(body, &book)
-//		if jsonErr != nil {
-//			ErrorWithJSON(w, "Json parse error", http.StatusInternalServerError)
-//			log.Println("Failed get all books: ", err)
-//			return
-//		}
-//		dbErr := c.Insert(book)
-//		if dbErr != nil {
-//			ErrorWithJSON(w, "Database error", http.StatusInternalServerError)
-//			log.Println("Failed get all books: ", err)
-//			return
-//		}
-//		respBody, err := json.MarshalIndent(book.Book1 + " was inserted", "", " ")
-//		if err != nil {
-//			log.Fatal(err)
-//		}
-//		ResponseWithJSON(w, respBody, http.StatusOK)
-//	}
-//
-//}
-//func GetBook(s *mgo.Session) func(w http.ResponseWriter, r *http.Request){
-//	return func(w http.ResponseWriter, r *http.Request){
-//		vars := mux.Vars(r)
-//		session := s.Copy()
-//		defer session.Close()
-//
-//		c := session.DB("store").C("books")
-//
-//		var book Book
-//		err := c.Find(bson.M{"book1":vars["bookName"]}).One(&book)
-//		if err != nil {
-//			ErrorWithJSON(w, "Database error", http.StatusInternalServerError)
-//			log.Println("Failed get all books:", err)
-//			return
-//		}
-//		respBody, err := json.MarshalIndent(book, "", " ")
-//		if err != nil {
-//			log.Fatal(err)
-//		}
-//
-//		ResponseWithJSON(w, respBody, http.StatusOK)
-//	}
-//
-//}
+func (tag *Tag) antiBot(user *User) (ab *AntiBot){
+	switch tag.Protected {
+	case "e":
+	case "b":
+		// check if bot
+	case "n":
+		// pass isOk: true to antibot struct
+	default:
+		// check if bot by default
+	}
+	// populate antibot and return it
+	return
+}
