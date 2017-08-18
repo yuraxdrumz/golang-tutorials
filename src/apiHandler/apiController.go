@@ -49,8 +49,10 @@ func GetHtmlCode(s *mgo.Session) func(w http.ResponseWriter, r *http.Request){
 			ErrorWithJSON(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		antiBot := tag.antiBot(&parsedUserAgent)
 		matchedGroup := tag.getMatchedGroup(&parsedUserAgent)
-		respBody, err := json.MarshalIndent(matchedGroup, "", " ")
+		resp := GetHtmlCodeResponse{antiBot, matchedGroup.HtmlCode}
+		respBody, err := json.MarshalIndent(resp, "", " ")
 		if err != nil {
 			ErrorWithJSON(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -104,13 +106,13 @@ func (tag *Tag) getMatchedGroup(user *User) (group *Group){
 func (tag *Tag) antiBot(user *User) (ab *AntiBot){
 	switch tag.Protected {
 	case "e":
+		ab = &AntiBot{true, false, false, false}
 	case "b":
-		// check if bot
+		ab = &AntiBot{true, false, false, false}
 	case "n":
-		// pass isOk: true to antibot struct
+		ab = &AntiBot{true, false, false, false}
 	default:
-		// check if bot by default
+		ab = &AntiBot{true, false, false, false}
 	}
-	// populate antibot and return it
 	return
 }

@@ -56,8 +56,16 @@ type User struct {
 }
 
 type AntiBot struct {
-	isOk bool
-	isBot bool
+	IsOk bool `json:"isOk"`
+	IsBot bool `json:"isBot"`
+	IsEditor bool `json:"isEditor"`
+	IsDevTool bool `json:"isDevTool"`
+
+}
+
+type GetHtmlCodeResponse struct {
+	AntiBot *AntiBot `json:"antiBot"`
+	HtmlCode string `json:"htmlCode"`
 }
 
 
