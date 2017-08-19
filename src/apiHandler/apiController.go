@@ -8,6 +8,7 @@ import (
 	"github.com/mssola/user_agent"
 	"gopkg.in/mgo.v2/bson"
 	"errors"
+	"net/url"
 )
 
 
@@ -49,8 +50,8 @@ func GetHtmlCode(s *mgo.Session) func(w http.ResponseWriter, r *http.Request){
 			ErrorWithJSON(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		antiBot := tag.antiBot(&parsedUserAgent)
-		matchedGroup := tag.getMatchedGroup(&parsedUserAgent)
+		antiBot := tag.antiBot(parsedUserAgent, queries)
+		matchedGroup := tag.getMatchedGroup(parsedUserAgent)
 		resp := GetHtmlCodeResponse{antiBot, matchedGroup.HtmlCode}
 		respBody, err := json.MarshalIndent(resp, "", " ")
 		if err != nil {
@@ -63,11 +64,11 @@ func GetHtmlCode(s *mgo.Session) func(w http.ResponseWriter, r *http.Request){
 	}
 }
 
-func parseUserAgent(userAgent string) User {
+func parseUserAgent(userAgent string) (user *User) {
 	ua := user_agent.New(userAgent)
 	engineName, engineVersion := ua.Engine()
 	browserName, browserVersion := ua.Browser()
-	user := User{
+	user = &User{
 		Bot: ua.Bot(),
 		Mobile: ua.Mobile(),
 		Platform : ua.Platform(),
@@ -81,7 +82,7 @@ func parseUserAgent(userAgent string) User {
 			Version:browserVersion,
 		},
 	}
-	return user
+	return
 }
 
 func getTag(s *mgo.Session,id string) (tag *Tag, err error){
@@ -103,16 +104,27 @@ func (tag *Tag) getMatchedGroup(user *User) (group *Group){
 	return
 }
 
-func (tag *Tag) antiBot(user *User) (ab *AntiBot){
+func (tag *Tag) antiBot(user *User, queries url.Values) (ab *AntiBot){
+	tag.rotate()
+	devTool := queries.Get("d")
 	switch tag.Protected {
 	case "e":
-		ab = &AntiBot{true, false, false, false}
+		ab = &AntiBot{true, false, false, devTool == "true"}
 	case "b":
-		ab = &AntiBot{true, false, false, false}
+		ab = &AntiBot{true, false, false, devTool == "true"}
 	case "n":
 		ab = &AntiBot{true, false, false, false}
 	default:
 		ab = &AntiBot{true, false, false, false}
 	}
+	return
+}
+
+func (tag *Tag) rotate() (htmlCode string){
+	htmlCodes := []string{}
+	for _, v := range tag.Groups{
+		htmlCodes = append(htmlCodes, v.HtmlCode)
+	}
+	log.Println(htmlCodes)
 	return
 }
